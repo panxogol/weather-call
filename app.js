@@ -1,20 +1,26 @@
-const { response } = require("express");
 const express = require("express");
 const https = require("https");
+const bodyParser = require("body-parser");
 
 const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+
 const port = 3000;
 
 const apiKey = "310f09b0615ade57a16a692cfc7dc490"
 
-var cityName = "Santiago de Chile";
-var city = cityName.replace(/\s+/g, "-").toLowerCase();
 
-var geocodingApiCall = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`
 
 
 // pages
 app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/index.html");
+});
+
+app.post("/", (req, res) => {
+    var cityName = req.body.cityName;
+    var city = cityName.replace(/\s+/g, "-").toLowerCase();
+    var geocodingApiCall = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
     https.get(geocodingApiCall, (response) => {
         console.log(response.statusCode);
         response.on("data", (data) => {
@@ -29,14 +35,25 @@ app.get("/", (req, res) => {
                     console.log(response2.statusCode);
                     response2.on("data", (data2) => {
                         const weatherData = JSON.parse(data2);
-                        console.log(weatherData.weather[0].description);
+                        var temp = weatherData.main.temp;
+                        var description = weatherData.weather[0].description
+                        console.log(description);
+                        console.log(weatherData);
+                        var iconUrl = `http://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`
+                        console.log(iconUrl);
+                        var iconHtml = `<img src="${iconUrl}" style="width: 2.5rem;"></img>`;
+                        res.set("charset", "utf-8");
+                        res.write(`<h2>The weather is currently ${description}: ${iconHtml}.</h2>`);
+                        res.write(`<h1>The temperature in ${cityData[0].name}, ${cityData[0].state}, ${cityData[0].country} is 
+                        ${temp} degree celcius.</h1>`);
+                        res.send();
                     });
                 });
-            }, 1000);
-            res.send("Server up and running.");
+            }, 200);
         });
     });
 });
+
 
 
 app.listen(port, () => {
